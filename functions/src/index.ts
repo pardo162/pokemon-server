@@ -20,15 +20,16 @@ exports.getPokedex = functions.region("europe-west1")
           reference.set({
             name: userRq,
             password: passwordRq,
+            rival: 0,
             pokedex: {
               1: {
                 id: 1,
                 health: 100,
-                level: 1,
+                level: 0,
               },
             },
           });
-          responseFb = "1,100,1";
+          responseFb = "1,100,0";
         } else {
           if (snapshot.child("password").val() == passwordRq) {
             snapshot.child("pokedex").forEach(function(pokedexs) {
@@ -42,8 +43,29 @@ exports.getPokedex = functions.region("europe-west1")
             responseFb = "Error Password";
           }
         }
-      }
-      ).then(function() {
+      }).then(function() {
         response.send(responseFb);
+      });
+    });
+
+exports.startFight = functions.region("europe-west1")
+    .https.onRequest((request, response) => {
+      const Request:string = request.query.text?.toString() as string;
+      const RequestSplit = Request.split(",");
+      const userRq = RequestSplit[0];
+      const passwordRq = RequestSplit[1];
+      let responseFb = 0;
+      const reference = database.ref("users/" + userRq + "/");
+      reference.once("value").then(function(snapshot) {
+        if (snapshot.child("password").val() == passwordRq) {
+          if (parseInt(snapshot.child("rival").val()) == 0) {
+            responseFb = Math.floor(Math.random() * 40) + 1;
+            reference.child("rival").set(responseFb);
+          } else {
+            responseFb = parseInt(snapshot.child("rival").val());
+          }
+        }
+      }).then(function() {
+        response.send(responseFb.toString());
       });
     });
