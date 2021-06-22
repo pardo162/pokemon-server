@@ -100,3 +100,41 @@ exports.endFight = functions.region("europe-west1")
         response.send(responseFb.toString());
       });
     });
+
+exports.feedPokemon = functions.region("europe-west1")
+    .https.onRequest((request, response) => {
+      const Request:string = request.query.text?.toString() as string;
+      const RequestSplit = Request.split(",");
+      const userRq = RequestSplit[0];
+      const passwordRq = RequestSplit[1];
+      const pokeon = RequestSplit[2];
+      let health = 0;
+      let level = 0;
+      let responseFb = "";
+      const reference = database.ref("users/" + userRq + "/");
+      reference.once("value").then(function(snapshot) {
+        if (snapshot.child("password").val() == passwordRq) {
+          health = parseInt(snapshot.child("pokedex")
+              .child(pokeon).child("health").val());
+          level = parseInt(snapshot.child("pokedex")
+              .child(pokeon).child("level").val());
+          if (health < 100) {
+            health += 20;
+            if (health > 100) {
+              health = 100;
+            }
+            level += 25;
+            if (level> 500) {
+              level = 500;
+            }
+            reference.child("pokedex").child(pokeon)
+                .child("health").set(health);
+            reference.child("pokedex").child(pokeon)
+                .child("level").set(level);
+            responseFb = pokeon + "," + health + "," + level;
+          }
+        }
+      }).then(function() {
+        response.send(responseFb);
+      });
+    });
