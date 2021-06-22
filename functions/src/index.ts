@@ -69,3 +69,34 @@ exports.startFight = functions.region("europe-west1")
         response.send(responseFb.toString());
       });
     });
+
+exports.endFight = functions.region("europe-west1")
+    .https.onRequest((request, response) => {
+      const Request:string = request.query.text?.toString() as string;
+      const RequestSplit = Request.split(",");
+      const userRq = RequestSplit[0];
+      const passwordRq = RequestSplit[1];
+      const pokeon = RequestSplit[2];
+      const health = parseInt(RequestSplit[3]);
+      let rival = 0;
+      let responseFb = "lost";
+      const reference = database.ref("users/" + userRq + "/");
+      reference.once("value").then(function(snapshot) {
+        rival = parseInt(snapshot.child("rival").val());
+        if (snapshot.child("password").val() == passwordRq &&
+          rival > 0 && rival < 41) {
+          if (health > 0) {
+            reference.child("pokedex").child(rival.toString()).set({
+              id: rival,
+              health: 100,
+              level: 0,
+            });
+            responseFb = "win";
+          }
+          reference.child("pokedex").child(pokeon).child("health").set(health);
+          reference.child("rival").set(0);
+        }
+      }).then(function() {
+        response.send(responseFb.toString());
+      });
+    });
